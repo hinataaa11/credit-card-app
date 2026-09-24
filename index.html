@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="信用卡管理">
+  <title>信用卡帳單管理</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <style>
+    :root{color-scheme:light;--bg:#f5f7fb;--card:#fff;--text:#16181d;--muted:#737986;--line:#e7e9ee;--primary:#111827;--bad:#b42318}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:var(--text)}
+    #appFrame{display:none;width:100%;height:100%;border:0;background:var(--bg)}
+    #setup{height:100%;display:grid;place-items:center;padding:24px}.card{width:min(460px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 14px 44px rgba(16,24,40,.1)}
+    .logo{width:72px;height:72px;border-radius:18px;display:block;margin-bottom:18px;object-fit:cover;background:#111827}h1{font-size:24px;margin:0 0 8px}.desc{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:18px}
+    label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}.row{display:flex;gap:8px}input{width:100%;border:1px solid #d9dde5;border-radius:12px;padding:12px;font:inherit;outline:none}input:focus{border-color:#8992a3;box-shadow:0 0 0 3px #eef0f4}button{border:0;border-radius:12px;background:var(--primary);color:#fff;font:inherit;font-weight:750;padding:12px 16px;cursor:pointer;white-space:nowrap}
+    .tip{font-size:12px;color:var(--muted);line-height:1.55;margin-top:12px}.error{display:none;color:var(--bad);font-size:13px;margin-top:10px}.tools{position:fixed;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:20;display:none}.tools button{width:38px;height:38px;padding:0;border-radius:50%;background:rgba(17,24,39,.76);box-shadow:0 5px 16px rgba(0,0,0,.18)}
+    @media(max-width:520px){.card{padding:20px;border-radius:18px}.row{flex-direction:column}.row button{width:100%}}
+  </style>
+</head>
+<body>
+  <section id="setup">
+    <div class="card">
+      <img class="logo" src="./assets/icon-192.png" alt="APP 圖示">
+      <h1>信用卡帳單管理</h1>
+      <div class="desc">第一次使用只要貼上你目前部署好的 Google Apps Script 網頁應用程式網址。網址只會存在這台裝置，不會寫進 GitHub。</div>
+      <label for="appUrl">Apps Script 網址</label>
+      <div class="row">
+        <input id="appUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec">
+        <button type="button" id="saveBtn">開啟 APP</button>
+      </div>
+      <div id="error" class="error">請貼上有效的 Apps Script /exec 網址。</div>
+      <div class="tip">之後若要更換網址，可在 APP 內按右下角 ⚙︎，或在網址後加上 <b>?setup=1</b>。</div>
+    </div>
+  </section>
+
+  <iframe id="appFrame" title="信用卡帳單管理"></iframe>
+  <div class="tools" id="tools"><button type="button" id="settingsBtn" aria-label="設定">⚙︎</button></div>
+
+  <script>
+    const STORAGE_KEY='creditCardManager.appUrl';
+    const setup=document.getElementById('setup');
+    const frame=document.getElementById('appFrame');
+    const input=document.getElementById('appUrl');
+    const error=document.getElementById('error');
+    const tools=document.getElementById('tools');
+
+    function isValid(url){
+      try{
+        const u=new URL(url);
+        return u.protocol==='https:' && /(^|\.)script\.google\.com$/.test(u.hostname) && /\/macros\/s\/.+\/exec\/?$/.test(u.pathname);
+      }catch(e){return false}
+    }
+    function openApp(url){
+      if(!isValid(url)){error.style.display='block';return}
+      localStorage.setItem(STORAGE_KEY,url.trim());
+      error.style.display='none'; setup.style.display='none'; frame.style.display='block'; tools.style.display='block';
+      frame.src=url.trim();
+    }
+    function openSetup(){
+      frame.src='about:blank'; frame.style.display='none'; tools.style.display='none'; setup.style.display='grid';
+      input.value=localStorage.getItem(STORAGE_KEY)||''; setTimeout(()=>input.focus(),50);
+    }
+    document.getElementById('saveBtn').addEventListener('click',()=>openApp(input.value));
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')openApp(input.value)});
+    document.getElementById('settingsBtn').addEventListener('click',openSetup);
+
+    const forceSetup=new URLSearchParams(location.search).get('setup')==='1';
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(saved && !forceSetup) openApp(saved); else { input.value=saved||''; }
+
+    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+  </script>
+</body>
+</html>

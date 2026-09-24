@@ -1,0 +1,4 @@
+Google Drive icon source:
+https://drive.google.com/file/d/1dY17XUanKaZeuvKA5sj9UqNayqbuqhoe/view?usp=sharing
+
+The GitHub Actions workflow downloads this image at deploy time and generates PWA icons.
